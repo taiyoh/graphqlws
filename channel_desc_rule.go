@@ -72,34 +72,36 @@ func ifToStr(d interface{}) string {
 	return ""
 }
 
-func getArgKeyValueFromValue(variables map[string]interface{}, val ast.Value) (string, string) {
+func getArgKeyValueFromValue(variables map[string]interface{}, arg *ast.Argument) *astArgs {
 	var k, v string
+	val := arg.Value
 	if val.GetKind() == kinds.Variable {
 		n := val.GetValue().(*ast.Name)
 		k = n.Value
 		vv, ok := variables[n.Value]
 		if !ok {
-			return k, ""
+			return nil
 		}
 		v = ifToStr(vv)
 	} else {
-		f := val.GetValue().(*ast.ObjectField)
-		k = f.Name.Value
-		vv := f.Value.GetValue()
+		k = arg.Name.Value
+		vv := arg.Value.GetValue().(string)
 		v = ifToStr(vv)
 	}
-	return k, v
+	if v != "" {
+		return &astArgs{Key: k, Val: v}
+	}
+	return nil
 }
 
 func getArgsFromFieldArguments(variables map[string]interface{}, field *ast.Field) []*astArgs {
 	args := []*astArgs{}
 	for _, arg := range field.Arguments {
-		if k, v := getArgKeyValueFromValue(variables, arg.Value); v != "" {
-			args = append(args, &astArgs{
-				Key: k,
-				Val: v,
-			})
+		a := getArgKeyValueFromValue(variables, arg)
+		if a == nil {
+			return nil
 		}
+		args = append(args, a)
 	}
 	return args
 }
@@ -113,11 +115,12 @@ func (r *channelDescriptionRule) GetChannelInfoList(variables map[string]interfa
 	if !ok {
 		return chList
 	}
-	args := getArgsFromFieldArguments(variables, field)
-	chList = append(chList, &channelInfo{
-		field: field.Name.Value,
-		args:  args,
-	})
+	if args := getArgsFromFieldArguments(variables, field); args != nil {
+		chList = append(chList, &channelInfo{
+			field: field.Name.Value,
+			args:  args,
+		})
+	}
 	return chList
 }
 

@@ -1,53 +1,38 @@
-package graphqlws_test
+package graphqlws
 
 import (
 	"testing"
 
-	"github.com/functionalfoundry/graphqlws"
 	"github.com/graphql-go/graphql/language/ast"
 	"github.com/graphql-go/graphql/language/parser"
 )
 
 type connForTest struct {
-	graphqlws.Connection
-	id              string
-	user            interface{}
-	ReceivedOpID    string
-	ReceivedPayload *graphqlws.DataMessagePayload
-	ReceivedError   error
+	Connection
 }
 
 func (c *connForTest) ID() string {
-	return c.id
+	return ""
 }
 
 func (c *connForTest) User() interface{} {
-	return c.user
+	return struct{}{}
 }
 
-func (c *connForTest) SendData(opID string, d *graphqlws.DataMessagePayload) {
-	c.ReceivedOpID = opID
-	c.ReceivedPayload = d
-}
+func (c *connForTest) SendData(opID string, d *DataMessagePayload) {}
 
-func (c *connForTest) SendError(e error) {
-	c.ReceivedError = e
-}
+func (c *connForTest) SendError(e error) {}
+
 func TestTestTest(t *testing.T) {
-	rule := graphqlws.NewChannelDescriptionRule()
+	rule := NewChannelDescriptionRule()
 
-	conn := &connForTest{
-		id: "hoge",
-		user: map[string]interface{}{
-			"id": "fuga",
-		},
-	}
+	conn := &connForTest{}
 
-	sub := &graphqlws.Subscription{
+	sub := &Subscription{
 		ID:            "foo",
 		OperationName: "",
 		Connection:    conn,
-		SendData:      func(d *graphqlws.DataMessagePayload) {},
+		SendData:      func(d *DataMessagePayload) {},
 	}
 
 	initSubscription := func(query string, doc *ast.Document) {
@@ -126,6 +111,33 @@ func TestTestTest(t *testing.T) {
 			t.Error("filled field must be 'hello', actualy: ", sub.Fields[0])
 		}
 
+	})
+
+	t.Run("query with variables, but no assign", func(t *testing.T) {
+		query := `
+			subscription mySubscribe($id: ID!, $aaa: String!) {
+				hello(id: $id, aaa: $aaa) {
+					foo
+					bar
+				}
+			}
+		`
+
+		document, _ := parser.Parse(parser.ParseParams{
+			Source: query,
+		})
+
+		initSubscription(query, document)
+		sub.Variables = map[string]interface{}{}
+
+		rule.Calculate(sub)
+
+		if len(sub.Channels) != 0 {
+			t.Error("filled channels count should be 0, actualy: ", sub.Channels[0])
+		}
+		if len(sub.Fields) != 0 {
+			t.Error("filled fields count should be 0, actualy: ", sub.Fields[0])
+		}
 	})
 
 }
