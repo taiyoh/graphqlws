@@ -37,6 +37,7 @@ type Subscription struct {
 	OperationName string
 	Document      *ast.Document
 	Fields        []string
+	Channels      []string
 	Connection    Connection
 	SendData      SubscriptionSendDataFunc
 }
@@ -90,6 +91,7 @@ type SubscriptionManager interface {
 type subscriptionManager struct {
 	subscriptions Subscriptions
 	schema        *graphql.Schema
+	descRule      ChannelDescriptionRule
 	logger        *log.Entry
 }
 
@@ -99,7 +101,12 @@ func NewSubscriptionManager(schema *graphql.Schema) SubscriptionManager {
 	manager.subscriptions = make(Subscriptions)
 	manager.logger = NewLogger("subscriptions")
 	manager.schema = schema
+	manager.descRule = &channelDescriptionRule{}
 	return manager
+}
+
+func (m *subscriptionManager) ReplaceDescRule(r ChannelDescriptionRule) {
+	m.descRule = r
 }
 
 func (m *subscriptionManager) Subscriptions() Subscriptions {
@@ -142,7 +149,7 @@ func (m *subscriptionManager) AddSubscription(
 	subscription.Document = document
 
 	// Extract query names from the document (typically, there should only be one)
-	subscription.Fields = subscriptionFieldNamesFromDocument(document)
+	m.descRule.Calculate(subscription)
 
 	// Allocate the connection's map of subscription IDs to
 	// subscriptions on demand
