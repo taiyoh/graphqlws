@@ -57,7 +57,7 @@ func TestChannelDescriptionRule(t *testing.T) {
 		})
 
 		initSubscription(query, document)
-		rule.Calculate(sub)
+		rule.FillFieldsAndChannels(sub)
 
 		if len(sub.Channels) != 1 {
 			t.Error("filled channels count should be 1")
@@ -95,7 +95,7 @@ func TestChannelDescriptionRule(t *testing.T) {
 			"aaa": "bbb",
 		}
 
-		rule.Calculate(sub)
+		rule.FillFieldsAndChannels(sub)
 
 		if len(sub.Channels) != 1 {
 			t.Error("filled channels count should be 1")
@@ -130,7 +130,7 @@ func TestChannelDescriptionRule(t *testing.T) {
 		initSubscription(query, document)
 		sub.Variables = map[string]interface{}{}
 
-		rule.Calculate(sub)
+		rule.FillFieldsAndChannels(sub)
 
 		if len(sub.Channels) != 0 {
 			t.Error("filled channels count should be 0, actualy: ", sub.Channels[0])

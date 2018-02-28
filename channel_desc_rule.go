@@ -11,7 +11,7 @@ import (
 
 // ChannelDescriptionRule provides calculation for fields and channels
 type ChannelDescriptionRule interface {
-	Calculate(subscription *Subscription)
+	FillFieldsAndChannels(subscription *Subscription)
 }
 
 // ChannelInfo is interface for channel description
@@ -124,7 +124,7 @@ func (r *channelDescriptionRule) GetChannelInfoList(variables map[string]interfa
 	return chList
 }
 
-func (r *channelDescriptionRule) Calculate(subscription *Subscription) {
+func (r *channelDescriptionRule) FillFieldsAndChannels(subscription *Subscription) {
 	sets := r.GetSelectionSets(subscription.Document)
 	fieldList := []string{}
 	channelList := []string{}
