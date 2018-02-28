@@ -51,6 +51,10 @@ type channelDescriptionRule struct {
 	ChannelDescriptionRule
 }
 
+func NewChannelDescriptionRule() *channelDescriptionRule {
+	return &channelDescriptionRule{}
+}
+
 func (r *channelDescriptionRule) GetSelectionSets(doc *ast.Document) []*ast.SelectionSet {
 	// these functions brings from ast.go
 	defs := operationDefinitionsWithOperation(doc, "subscription")
