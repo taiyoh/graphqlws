@@ -23,7 +23,7 @@ func (c *connForTest) SendData(opID string, d *DataMessagePayload) {}
 
 func (c *connForTest) SendError(e error) {}
 
-func TestTestTest(t *testing.T) {
+func TestChannelDescriptionRule(t *testing.T) {
 	rule := NewChannelDescriptionRule()
 
 	conn := &connForTest{}
