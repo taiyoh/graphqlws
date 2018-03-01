@@ -23,7 +23,7 @@ func (c *connForTest) SendData(opID string, d *DataMessagePayload) {}
 
 func (c *connForTest) SendError(e error) {}
 
-func TestChannelDescriptionRule(t *testing.T) {
+func TestChannelNameBuilder(t *testing.T) {
 	b := NewChannelNameBuilder()
 
 	conn := &connForTest{}
@@ -74,7 +74,7 @@ func TestChannelDescriptionRule(t *testing.T) {
 	t.Run("simple query", func(t *testing.T) {
 		query := `
 			subscription {
-				hello(id: 1, aaa: "fuu") {
+				hello(id: 1, aaa: "fuu", t1: 3.14, t2: false) {
 					foo
 					bar
 				}
@@ -95,16 +95,16 @@ func TestChannelDescriptionRule(t *testing.T) {
 			t.Error("filled field must be 'hello', actually: ", fields[0].Field())
 		}
 
-		if fields[0].String() != "hello:fuu:1" {
-			t.Error("filled channel must be 'hello:fuu:1', actually: ", fields[0].String())
+		if fields[0].String() != "hello:fuu:1:3.14.false" {
+			t.Error("filled channel must be 'hello:fuu:1:3.14:false', actually: ", fields[0].String())
 		}
 
 	})
 
 	t.Run("query with variables", func(t *testing.T) {
 		query := `
-			subscription mySubscribe($id: ID!, $aaa: String!) {
-				hello(id: $id, aaa: $aaa) {
+			subscription mySubscribe($id: ID!, $aaa: String!, $p1: Int!, $p2: Float!, $p3: Boolean) {
+				hello(id: $id, aaa: $aaa, p1: $p1, p2: $p2, p3: $p3) {
 					foo
 					bar
 				}
@@ -119,6 +119,9 @@ func TestChannelDescriptionRule(t *testing.T) {
 		sub.Variables = map[string]interface{}{
 			"id":  2,
 			"aaa": "bbb",
+			"p1":  10,
+			"p2":  3.14,
+			"p3":  false,
 		}
 
 		fields := b.GetFieldsAndArgs(document, sub.Variables)
@@ -130,8 +133,8 @@ func TestChannelDescriptionRule(t *testing.T) {
 			t.Error("filled field must be 'hello', actually: ", fields[0].Field())
 		}
 
-		if fields[0].String() != "hello:bbb:2" {
-			t.Error("filled channel must be 'hello:bbb:2', actually: ", fields[0].String())
+		if fields[0].String() != "hello:bbb:2:10:3.14:false" {
+			t.Error("filled channel must be 'hello:bbb:2:10:3.14:false', actually: ", fields[0].String())
 		}
 
 	})
