@@ -24,7 +24,7 @@ func (c *connForTest) SendData(opID string, d *DataMessagePayload) {}
 func (c *connForTest) SendError(e error) {}
 
 func TestChannelDescriptionRule(t *testing.T) {
-	rule := NewChannelDescriptionRule()
+	b := NewChannelNameBuilder()
 
 	conn := &connForTest{}
 
@@ -38,9 +38,38 @@ func TestChannelDescriptionRule(t *testing.T) {
 	initSubscription := func(query string, doc *ast.Document) {
 		sub.Query = query
 		sub.Document = doc
-		sub.Channels = []string{}
-		sub.Fields = []string{}
+		sub.Fields = []FieldWithArgs{}
 	}
+
+	t.Run("query without args", func(t *testing.T) {
+		query := `
+			subscription {
+				hello {
+					foo
+					bar
+				}
+			}
+		`
+
+		document, _ := parser.Parse(parser.ParseParams{
+			Source: query,
+		})
+
+		initSubscription(query, document)
+		fields := b.GetFieldsAndArgs(document, sub.Variables)
+
+		if len(fields) != 1 {
+			t.Error("filled fields count should be 1")
+		}
+		if fields[0].Field() != "hello" {
+			t.Error("filled field must be 'hello', actually: ", fields[0].Field())
+		}
+
+		if fields[0].String() != "hello" {
+			t.Error("filled channel must be 'hello', actually: ", fields[0].String())
+		}
+
+	})
 
 	t.Run("simple query", func(t *testing.T) {
 		query := `
@@ -57,20 +86,17 @@ func TestChannelDescriptionRule(t *testing.T) {
 		})
 
 		initSubscription(query, document)
-		fields, channels := rule.GetFieldsAndChannelsFromDocument(document, sub.Variables)
-
-		if len(channels) != 1 {
-			t.Error("filled channels count should be 1")
-		}
-		if channels[0] != "hello:fuu:1" {
-			t.Error("filled channel must be 'hello:fuu:1', actualy: ", sub.Channels[0])
-		}
+		fields := b.GetFieldsAndArgs(document, sub.Variables)
 
 		if len(fields) != 1 {
 			t.Error("filled fields count should be 1")
 		}
-		if fields[0] != "hello" {
-			t.Error("filled field must be 'hello', actualy: ", sub.Fields[0])
+		if fields[0].Field() != "hello" {
+			t.Error("filled field must be 'hello', actually: ", fields[0].Field())
+		}
+
+		if fields[0].String() != "hello:fuu:1" {
+			t.Error("filled channel must be 'hello:fuu:1', actually: ", fields[0].String())
 		}
 
 	})
@@ -95,20 +121,17 @@ func TestChannelDescriptionRule(t *testing.T) {
 			"aaa": "bbb",
 		}
 
-		fields, channels := rule.GetFieldsAndChannelsFromDocument(document, sub.Variables)
-
-		if len(channels) != 1 {
-			t.Error("filled channels count should be 1")
-		}
-		if channels[0] != "hello:bbb:2" {
-			t.Error("filled channel must be 'hello:bbb:2', actualy: ", sub.Channels[0])
-		}
+		fields := b.GetFieldsAndArgs(document, sub.Variables)
 
 		if len(fields) != 1 {
 			t.Error("filled fields count should be 1")
 		}
-		if fields[0] != "hello" {
-			t.Error("filled field must be 'hello', actualy: ", sub.Fields[0])
+		if fields[0].Field() != "hello" {
+			t.Error("filled field must be 'hello', actually: ", fields[0].Field())
+		}
+
+		if fields[0].String() != "hello:bbb:2" {
+			t.Error("filled channel must be 'hello:bbb:2', actually: ", fields[0].String())
 		}
 
 	})
@@ -130,13 +153,10 @@ func TestChannelDescriptionRule(t *testing.T) {
 		initSubscription(query, document)
 		sub.Variables = map[string]interface{}{}
 
-		fields, channels := rule.GetFieldsAndChannelsFromDocument(document, sub.Variables)
+		fields := b.GetFieldsAndArgs(document, sub.Variables)
 
-		if len(channels) != 0 {
-			t.Error("filled channels count should be 0, actualy: ", channels[0])
-		}
 		if len(fields) != 0 {
-			t.Error("filled fields count should be 0, actualy: ", fields[0])
+			t.Error("filled fields count should be 0, actually: ", fields[0])
 		}
 	})
 

@@ -36,8 +36,7 @@ type Subscription struct {
 	Variables     map[string]interface{}
 	OperationName string
 	Document      *ast.Document
-	Fields        []string
-	Channels      []string
+	Fields        []FieldWithArgs
 	Connection    Connection
 	SendData      SubscriptionSendDataFunc
 }
@@ -51,8 +50,8 @@ func (s *Subscription) MatchesField(field string) bool {
 
 	// The subscription matches the field if any of the queries have
 	// the same name as the field
-	for _, name := range s.Fields {
-		if name == field {
+	for _, f := range s.Fields {
+		if f.Field() == field {
 			return true
 		}
 	}
@@ -91,7 +90,7 @@ type SubscriptionManager interface {
 type subscriptionManager struct {
 	subscriptions Subscriptions
 	schema        *graphql.Schema
-	descRule      ChannelDescriptionRule
+	chBuilder     ChannelNameBuilder
 	logger        *log.Entry
 }
 
@@ -101,12 +100,12 @@ func NewSubscriptionManager(schema *graphql.Schema) SubscriptionManager {
 	manager.subscriptions = make(Subscriptions)
 	manager.logger = NewLogger("subscriptions")
 	manager.schema = schema
-	manager.descRule = &channelDescriptionRule{}
+	manager.chBuilder = &channelNameBuilder{}
 	return manager
 }
 
-func (m *subscriptionManager) ReplaceDescRule(r ChannelDescriptionRule) {
-	m.descRule = r
+func (m *subscriptionManager) ReplaceChannelNameBuilder(b ChannelNameBuilder) {
+	m.chBuilder = b
 }
 
 func (m *subscriptionManager) Subscriptions() Subscriptions {
@@ -149,9 +148,8 @@ func (m *subscriptionManager) AddSubscription(
 	subscription.Document = document
 
 	// Extract query names from the document (typically, there should only be one)
-	fields, channels := m.descRule.GetFieldsAndChannelsFromDocument(subscription.Document, subscription.Variables)
+	fields := m.chBuilder.GetFieldsAndArgs(subscription.Document, subscription.Variables)
 	subscription.Fields = fields
-	subscription.Channels = channels
 
 	// Allocate the connection's map of subscription IDs to
 	// subscriptions on demand

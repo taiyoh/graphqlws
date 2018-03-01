@@ -10,33 +10,33 @@ import (
 )
 
 // ChannelDescriptionRule provides calculation for fields and channels
-type ChannelDescriptionRule interface {
-	GetFieldsAndChannelsFromDocument(doc *ast.Document, variables map[string]interface{}) ([]string, []string)
+type ChannelNameBuilder interface {
+	GetFieldsAndArgs(doc *ast.Document, variables map[string]interface{}) []FieldWithArgs
 }
 
 // ChannelInfo is interface for channel description
 // channel consists of field name and args
-type ChannelInfo interface {
+type FieldWithArgs interface {
 	Field() string
-	Describe() string
+	String() string
 }
 
-type channelInfo struct {
-	ChannelInfo
+type fieldWithArgs struct {
+	FieldWithArgs
 	field string
 	args  []*astArgs
 }
 
-func (chi *channelInfo) Field() string {
-	return chi.field
+func (f *fieldWithArgs) Field() string {
+	return f.field
 }
 
-func (chi *channelInfo) Describe() string {
-	sort.Slice(chi.args, func(i, j int) bool {
-		return chi.args[i].Key <= chi.args[j].Key
+func (f *fieldWithArgs) String() string {
+	sort.Slice(f.args, func(i, j int) bool {
+		return f.args[i].Key <= f.args[j].Key
 	})
-	strList := []string{chi.field}
-	for _, arg := range chi.args {
+	strList := []string{f.field}
+	for _, arg := range f.args {
 		strList = append(strList, arg.Val)
 	}
 	return strings.Join(strList, ":")
@@ -47,15 +47,15 @@ type astArgs struct {
 	Val string
 }
 
-type channelDescriptionRule struct {
-	ChannelDescriptionRule
+type channelNameBuilder struct {
+	ChannelNameBuilder
 }
 
-func NewChannelDescriptionRule() *channelDescriptionRule {
-	return &channelDescriptionRule{}
+func NewChannelNameBuilder() *channelNameBuilder {
+	return &channelNameBuilder{}
 }
 
-func (r *channelDescriptionRule) GetSelectionSets(doc *ast.Document) []*ast.SelectionSet {
+func (b *channelNameBuilder) GetSelectionSets(doc *ast.Document) []*ast.SelectionSet {
 	// these functions brings from ast.go
 	defs := operationDefinitionsWithOperation(doc, "subscription")
 	return selectionSetsForOperationDefinitions(defs)
@@ -106,35 +106,27 @@ func getArgsFromFieldArguments(variables map[string]interface{}, field *ast.Fiel
 	return args
 }
 
-func (r *channelDescriptionRule) GetChannelInfoList(variables map[string]interface{}, set *ast.SelectionSet) []ChannelInfo {
-	chList := []ChannelInfo{}
+func (b *channelNameBuilder) GetFieldWithArgs(variables map[string]interface{}, set *ast.SelectionSet) FieldWithArgs {
 	if len(set.Selections) < 1 {
-		return chList
+		return nil
 	}
 	field, ok := set.Selections[0].(*ast.Field)
 	if !ok {
-		return chList
+		return nil
 	}
 	if args := getArgsFromFieldArguments(variables, field); args != nil {
-		chList = append(chList, &channelInfo{
-			field: field.Name.Value,
-			args:  args,
-		})
+		return &fieldWithArgs{field: field.Name.Value, args: args}
 	}
-	return chList
+	return nil
 }
 
-func (r *channelDescriptionRule) GetFieldsAndChannelsFromDocument(doc *ast.Document, variables map[string]interface{}) ([]string, []string) {
-	sets := r.GetSelectionSets(doc)
-	fieldList := []string{}
-	channelList := []string{}
+func (b *channelNameBuilder) GetFieldsAndArgs(doc *ast.Document, variables map[string]interface{}) []FieldWithArgs {
+	sets := b.GetSelectionSets(doc)
+	fieldList := []FieldWithArgs{}
 	for _, set := range sets {
-		if chList := r.GetChannelInfoList(variables, set); len(chList) > 0 {
-			for _, ch := range chList {
-				channelList = append(channelList, ch.Describe())
-				fieldList = append(fieldList, ch.Field())
-			}
+		if f := b.GetFieldWithArgs(variables, set); f != nil {
+			fieldList = append(fieldList, f)
 		}
 	}
-	return fieldList, channelList
+	return fieldList
 }
