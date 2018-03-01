@@ -11,7 +11,7 @@ import (
 
 // ChannelDescriptionRule provides calculation for fields and channels
 type ChannelDescriptionRule interface {
-	FillFieldsAndChannels(subscription *Subscription)
+	GetFieldsAndChannelsFromDocument(doc *ast.Document, variables map[string]interface{}) ([]string, []string)
 }
 
 // ChannelInfo is interface for channel description
@@ -124,18 +124,17 @@ func (r *channelDescriptionRule) GetChannelInfoList(variables map[string]interfa
 	return chList
 }
 
-func (r *channelDescriptionRule) FillFieldsAndChannels(subscription *Subscription) {
-	sets := r.GetSelectionSets(subscription.Document)
+func (r *channelDescriptionRule) GetFieldsAndChannelsFromDocument(doc *ast.Document, variables map[string]interface{}) ([]string, []string) {
+	sets := r.GetSelectionSets(doc)
 	fieldList := []string{}
 	channelList := []string{}
 	for _, set := range sets {
-		if chList := r.GetChannelInfoList(subscription.Variables, set); len(chList) > 0 {
+		if chList := r.GetChannelInfoList(variables, set); len(chList) > 0 {
 			for _, ch := range chList {
 				channelList = append(channelList, ch.Describe())
 				fieldList = append(fieldList, ch.Field())
 			}
 		}
 	}
-	subscription.Channels = channelList
-	subscription.Fields = fieldList
+	return fieldList, channelList
 }

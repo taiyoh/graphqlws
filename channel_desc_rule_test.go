@@ -57,19 +57,19 @@ func TestChannelDescriptionRule(t *testing.T) {
 		})
 
 		initSubscription(query, document)
-		rule.FillFieldsAndChannels(sub)
+		fields, channels := rule.GetFieldsAndChannelsFromDocument(document, sub.Variables)
 
-		if len(sub.Channels) != 1 {
+		if len(channels) != 1 {
 			t.Error("filled channels count should be 1")
 		}
-		if sub.Channels[0] != "hello:fuu:1" {
+		if channels[0] != "hello:fuu:1" {
 			t.Error("filled channel must be 'hello:fuu:1', actualy: ", sub.Channels[0])
 		}
 
-		if len(sub.Fields) != 1 {
+		if len(fields) != 1 {
 			t.Error("filled fields count should be 1")
 		}
-		if sub.Fields[0] != "hello" {
+		if fields[0] != "hello" {
 			t.Error("filled field must be 'hello', actualy: ", sub.Fields[0])
 		}
 
@@ -95,19 +95,19 @@ func TestChannelDescriptionRule(t *testing.T) {
 			"aaa": "bbb",
 		}
 
-		rule.FillFieldsAndChannels(sub)
+		fields, channels := rule.GetFieldsAndChannelsFromDocument(document, sub.Variables)
 
-		if len(sub.Channels) != 1 {
+		if len(channels) != 1 {
 			t.Error("filled channels count should be 1")
 		}
-		if sub.Channels[0] != "hello:bbb:2" {
+		if channels[0] != "hello:bbb:2" {
 			t.Error("filled channel must be 'hello:bbb:2', actualy: ", sub.Channels[0])
 		}
 
-		if len(sub.Fields) != 1 {
+		if len(fields) != 1 {
 			t.Error("filled fields count should be 1")
 		}
-		if sub.Fields[0] != "hello" {
+		if fields[0] != "hello" {
 			t.Error("filled field must be 'hello', actualy: ", sub.Fields[0])
 		}
 
@@ -130,13 +130,13 @@ func TestChannelDescriptionRule(t *testing.T) {
 		initSubscription(query, document)
 		sub.Variables = map[string]interface{}{}
 
-		rule.FillFieldsAndChannels(sub)
+		fields, channels := rule.GetFieldsAndChannelsFromDocument(document, sub.Variables)
 
-		if len(sub.Channels) != 0 {
-			t.Error("filled channels count should be 0, actualy: ", sub.Channels[0])
+		if len(channels) != 0 {
+			t.Error("filled channels count should be 0, actualy: ", channels[0])
 		}
-		if len(sub.Fields) != 0 {
-			t.Error("filled fields count should be 0, actualy: ", sub.Fields[0])
+		if len(fields) != 0 {
+			t.Error("filled fields count should be 0, actualy: ", fields[0])
 		}
 	})
 

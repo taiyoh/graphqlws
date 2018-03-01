@@ -149,7 +149,9 @@ func (m *subscriptionManager) AddSubscription(
 	subscription.Document = document
 
 	// Extract query names from the document (typically, there should only be one)
-	m.descRule.FillFieldsAndChannels(subscription)
+	fields, channels := m.descRule.GetFieldsAndChannelsFromDocument(subscription.Document, subscription.Variables)
+	subscription.Fields = fields
+	subscription.Channels = channels
 
 	// Allocate the connection's map of subscription IDs to
 	// subscriptions on demand
