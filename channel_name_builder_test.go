@@ -3,7 +3,6 @@ package graphqlws
 import (
 	"testing"
 
-	"github.com/graphql-go/graphql/language/ast"
 	"github.com/graphql-go/graphql/language/parser"
 )
 
@@ -35,9 +34,12 @@ func TestChannelNameBuilder(t *testing.T) {
 		SendData:      func(d *DataMessagePayload) {},
 	}
 
-	initSubscription := func(query string, doc *ast.Document) {
+	initSubscription := func(query string) {
+		document, _ := parser.Parse(parser.ParseParams{
+			Source: query,
+		})
 		sub.Query = query
-		sub.Document = doc
+		sub.Document = document
 		sub.Fields = []FieldWithArgs{}
 	}
 
@@ -51,12 +53,8 @@ func TestChannelNameBuilder(t *testing.T) {
 			}
 		`
 
-		document, _ := parser.Parse(parser.ParseParams{
-			Source: query,
-		})
-
-		initSubscription(query, document)
-		fields := b.GetFieldsAndArgs(document, sub.Variables)
+		initSubscription(query)
+		fields := b.GetFieldsAndArgs(sub.Document, sub.Variables)
 
 		if len(fields) != 1 {
 			t.Error("filled fields count should be 1")
@@ -81,12 +79,8 @@ func TestChannelNameBuilder(t *testing.T) {
 			}
 		`
 
-		document, _ := parser.Parse(parser.ParseParams{
-			Source: query,
-		})
-
-		initSubscription(query, document)
-		fields := b.GetFieldsAndArgs(document, sub.Variables)
+		initSubscription(query)
+		fields := b.GetFieldsAndArgs(sub.Document, sub.Variables)
 
 		if len(fields) != 1 {
 			t.Error("filled fields count should be 1")
@@ -111,11 +105,7 @@ func TestChannelNameBuilder(t *testing.T) {
 			}
 		`
 
-		document, _ := parser.Parse(parser.ParseParams{
-			Source: query,
-		})
-
-		initSubscription(query, document)
+		initSubscription(query)
 		sub.Variables = map[string]interface{}{
 			"id":  2,
 			"aaa": "bbb",
@@ -124,7 +114,7 @@ func TestChannelNameBuilder(t *testing.T) {
 			"p3":  false,
 		}
 
-		fields := b.GetFieldsAndArgs(document, sub.Variables)
+		fields := b.GetFieldsAndArgs(sub.Document, sub.Variables)
 
 		if len(fields) != 1 {
 			t.Error("filled fields count should be 1")
@@ -149,14 +139,10 @@ func TestChannelNameBuilder(t *testing.T) {
 			}
 		`
 
-		document, _ := parser.Parse(parser.ParseParams{
-			Source: query,
-		})
-
-		initSubscription(query, document)
+		initSubscription(query)
 		sub.Variables = map[string]interface{}{}
 
-		fields := b.GetFieldsAndArgs(document, sub.Variables)
+		fields := b.GetFieldsAndArgs(sub.Document, sub.Variables)
 
 		if len(fields) != 0 {
 			t.Error("filled fields count should be 0, actually: ", fields[0])
