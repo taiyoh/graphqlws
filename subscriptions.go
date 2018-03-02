@@ -36,7 +36,7 @@ type Subscription struct {
 	Variables     map[string]interface{}
 	OperationName string
 	Document      *ast.Document
-	Fields        []FieldWithArgs
+	Fields        []FieldWithArgsSerializer
 	Connection    Connection
 	SendData      SubscriptionSendDataFunc
 }
@@ -100,7 +100,7 @@ func NewSubscriptionManager(schema *graphql.Schema) SubscriptionManager {
 	manager.subscriptions = make(Subscriptions)
 	manager.logger = NewLogger("subscriptions")
 	manager.schema = schema
-	manager.fieldWithArgsFactory = getNewFieldWithArgsFunc()
+	manager.fieldWithArgsFactory = getNewFieldWithArgsSerializerFunc()
 	return manager
 }
 

@@ -9,23 +9,22 @@ import (
 	"github.com/graphql-go/graphql/language/kinds"
 )
 
-// FieldWithArgs interface provides getter for field and channel of query.
-// "channel" consists of field + args.
-// But its building logic is depend on user's implementation.
+// FieldWithArgsSerializer interface provides getter for serialized field and args of query.
+// Its building logic is depends on user's implementation.
 // Below is reference implementation.
-type FieldWithArgs interface {
+type FieldWithArgsSerializer interface {
 	Field() string
-	Channel() string
+	Serialized() string
 }
 
-type fieldWithArgs struct {
-	FieldWithArgs
-	field   string
-	channel string
-	args    map[string]string
+type fieldWithArgsSerializer struct {
+	FieldWithArgsSerializer
+	field      string
+	serialized string
+	args       map[string]string
 }
 
-func (fa *fieldWithArgs) init() {
+func (fa *fieldWithArgsSerializer) init() {
 	sargs := []string{}
 	for k := range fa.args {
 		sargs = append(sargs, k)
@@ -37,31 +36,31 @@ func (fa *fieldWithArgs) init() {
 	for i := range sargs {
 		strList = append(strList, fa.args[sargs[i]])
 	}
-	fa.channel = strings.Join(strList, ":")
+	fa.serialized = strings.Join(strList, ":")
 }
 
-func (fa *fieldWithArgs) Field() string {
+func (fa *fieldWithArgsSerializer) Field() string {
 	return fa.field
 }
 
-func (fa *fieldWithArgs) Channel() string {
-	return fa.channel
+func (fa *fieldWithArgsSerializer) Serialized() string {
+	return fa.serialized
 }
 
-type newFieldWithArgsFunc func(f string, a map[string]string) FieldWithArgs
+type newFieldWithArgsSerializerFunc func(f string, a map[string]string) FieldWithArgsSerializer
 
-func (fn newFieldWithArgsFunc) Generate(f string, a map[string]string) FieldWithArgs {
+func (fn newFieldWithArgsSerializerFunc) Generate(f string, a map[string]string) FieldWithArgsSerializer {
 	return fn(f, a)
 }
 
 // FieldWithArgsFactory interface provides Generate method for getting FieldArgs from field name and args
 type FieldWithArgsFactory interface {
-	Generate(field string, args map[string]string) FieldWithArgs
+	Generate(field string, args map[string]string) FieldWithArgsSerializer
 }
 
-func getNewFieldWithArgsFunc() newFieldWithArgsFunc {
-	return func(f string, a map[string]string) FieldWithArgs {
-		fa := &fieldWithArgs{
+func getNewFieldWithArgsSerializerFunc() newFieldWithArgsSerializerFunc {
+	return func(f string, a map[string]string) FieldWithArgsSerializer {
+		fa := &fieldWithArgsSerializer{
 			field: f,
 			args:  a,
 		}
@@ -156,10 +155,10 @@ func getFieldWithArgs(variables map[string]interface{}, set *ast.SelectionSet) (
 	return "", nil
 }
 
-func subscriptionFieldNamesFromDocument(doc *ast.Document, variables map[string]interface{}, fn FieldWithArgsFactory) []FieldWithArgs {
+func subscriptionFieldNamesFromDocument(doc *ast.Document, variables map[string]interface{}, fn FieldWithArgsFactory) []FieldWithArgsSerializer {
 	defs := operationDefinitionsWithOperation(doc, "subscription")
 	sets := selectionSetsForOperationDefinitions(defs)
-	fieldList := []FieldWithArgs{}
+	fieldList := []FieldWithArgsSerializer{}
 	for _, set := range sets {
 		if f, args := getFieldWithArgs(variables, set); f != "" {
 			fieldList = append(fieldList, fn.Generate(f, args))
