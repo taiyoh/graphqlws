@@ -9,9 +9,13 @@ import (
 	"github.com/graphql-go/graphql/language/kinds"
 )
 
+// FieldWithArgs interface provides getter for field and channel of query.
+// "channel" consists of field + args.
+// But its building logic is depend on user's implementation.
+// Below is reference implementation.
 type FieldWithArgs interface {
 	Field() string
-	String() string
+	Channel() string
 }
 
 type fieldWithArgs struct {
@@ -40,21 +44,22 @@ func (fa *fieldWithArgs) Field() string {
 	return fa.field
 }
 
-func (fa *fieldWithArgs) String() string {
+func (fa *fieldWithArgs) Channel() string {
 	return fa.channel
 }
 
-type NewFieldWithArgsFunc func(f string, a map[string]string) FieldWithArgs
+type newFieldWithArgsFunc func(f string, a map[string]string) FieldWithArgs
 
-func (fn NewFieldWithArgsFunc) Generate(f string, a map[string]string) FieldWithArgs {
+func (fn newFieldWithArgsFunc) Generate(f string, a map[string]string) FieldWithArgs {
 	return fn(f, a)
 }
 
+// FieldWithArgsFactory interface provides Generate method for getting FieldArgs from field name and args
 type FieldWithArgsFactory interface {
-	Generate(f string, a map[string]string) FieldWithArgs
+	Generate(field string, args map[string]string) FieldWithArgs
 }
 
-func GetNewFieldWithArgsFunc() NewFieldWithArgsFunc {
+func getNewFieldWithArgsFunc() newFieldWithArgsFunc {
 	return func(f string, a map[string]string) FieldWithArgs {
 		fa := &fieldWithArgs{
 			field: f,
@@ -101,7 +106,7 @@ func ifToStr(d interface{}) string {
 	if v, ok := d.(int); ok {
 		return strconv.Itoa(v)
 	}
-	// TODO: more complex rules...
+	// TODO: more complex rules...(eg: input type)
 	return ""
 }
 

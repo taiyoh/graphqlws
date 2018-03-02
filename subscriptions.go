@@ -100,7 +100,7 @@ func NewSubscriptionManager(schema *graphql.Schema) SubscriptionManager {
 	manager.subscriptions = make(Subscriptions)
 	manager.logger = NewLogger("subscriptions")
 	manager.schema = schema
-	manager.fieldWithArgsFactory = GetNewFieldWithArgsFunc()
+	manager.fieldWithArgsFactory = getNewFieldWithArgsFunc()
 	return manager
 }
 

@@ -23,7 +23,7 @@ func (c *connForTest) SendData(opID string, d *DataMessagePayload) {}
 func (c *connForTest) SendError(e error) {}
 
 func TestChannelNameBuilder(t *testing.T) {
-	fn := GetNewFieldWithArgsFunc()
+	fn := getNewFieldWithArgsFunc()
 
 	conn := &connForTest{}
 
@@ -62,8 +62,8 @@ func TestChannelNameBuilder(t *testing.T) {
 			t.Error("filled field must be 'hello', actually: ", sub.Fields[0].Field())
 		}
 
-		if sub.Fields[0].String() != "hello" {
-			t.Error("filled channel must be 'hello', actually: ", sub.Fields[0].String())
+		if sub.Fields[0].Channel() != "hello" {
+			t.Error("filled channel must be 'hello', actually: ", sub.Fields[0].Channel())
 		}
 
 	})
@@ -87,8 +87,8 @@ func TestChannelNameBuilder(t *testing.T) {
 			t.Error("filled field must be 'hello', actually: ", sub.Fields[0].Field())
 		}
 
-		if sub.Fields[0].String() != "hello:fuu:1:3.14.false" {
-			t.Error("filled channel must be 'hello:fuu:1:3.14:false', actually: ", sub.Fields[0].String())
+		if sub.Fields[0].Channel() != "hello:fuu:1:3.14.false" {
+			t.Error("filled channel must be 'hello:fuu:1:3.14:false', actually: ", sub.Fields[0].Channel())
 		}
 
 	})
@@ -120,8 +120,8 @@ func TestChannelNameBuilder(t *testing.T) {
 			t.Error("filled field must be 'hello', actually: ", sub.Fields[0].Field())
 		}
 
-		if sub.Fields[0].String() != "hello:bbb:2:10:3.14:false" {
-			t.Error("filled channel must be 'hello:bbb:2:10:3.14:false', actually: ", sub.Fields[0].String())
+		if sub.Fields[0].Channel() != "hello:bbb:2:10:3.14:false" {
+			t.Error("filled channel must be 'hello:bbb:2:10:3.14:false', actually: ", sub.Fields[0].Channel())
 		}
 
 	})
@@ -141,7 +141,7 @@ func TestChannelNameBuilder(t *testing.T) {
 		sub.Fields = subscriptionFieldNamesFromDocument(sub.Document, sub.Variables, fn)
 
 		if len(sub.Fields) != 0 {
-			t.Error("filled fields count should be 0, actually: ", sub.Fields[0].String())
+			t.Error("filled fields count should be 0, actually: ", sub.Fields[0].Channel())
 		}
 	})
 
