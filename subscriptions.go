@@ -88,10 +88,10 @@ type SubscriptionManager interface {
  */
 
 type subscriptionManager struct {
-	subscriptions Subscriptions
-	schema        *graphql.Schema
-	chBuilder     ChannelNameBuilder
-	logger        *log.Entry
+	subscriptions     Subscriptions
+	schema            *graphql.Schema
+	fieldWithArgsFunc NewFieldWithArgsFunc
+	logger            *log.Entry
 }
 
 // NewSubscriptionManager creates a new subscription manager.
@@ -100,12 +100,12 @@ func NewSubscriptionManager(schema *graphql.Schema) SubscriptionManager {
 	manager.subscriptions = make(Subscriptions)
 	manager.logger = NewLogger("subscriptions")
 	manager.schema = schema
-	manager.chBuilder = &channelNameBuilder{}
+	manager.fieldWithArgsFunc = GetNewFieldWithArgsFunc()
 	return manager
 }
 
-func (m *subscriptionManager) ReplaceChannelNameBuilder(b ChannelNameBuilder) {
-	m.chBuilder = b
+func (m *subscriptionManager) ReplaceFieldWithArgsFunc(f NewFieldWithArgsFunc) {
+	m.fieldWithArgsFunc = f
 }
 
 func (m *subscriptionManager) Subscriptions() Subscriptions {
@@ -148,8 +148,7 @@ func (m *subscriptionManager) AddSubscription(
 	subscription.Document = document
 
 	// Extract query names from the document (typically, there should only be one)
-	fields := m.chBuilder.GetFieldsAndArgs(subscription.Document, subscription.Variables)
-	subscription.Fields = fields
+	subscription.Fields = subscriptionFieldNamesFromDocument(subscription.Document, subscription.Variables, m.fieldWithArgsFunc)
 
 	// Allocate the connection's map of subscription IDs to
 	// subscriptions on demand

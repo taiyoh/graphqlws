@@ -23,7 +23,7 @@ func (c *connForTest) SendData(opID string, d *DataMessagePayload) {}
 func (c *connForTest) SendError(e error) {}
 
 func TestChannelNameBuilder(t *testing.T) {
-	b := NewChannelNameBuilder()
+	fn := GetNewFieldWithArgsFunc()
 
 	conn := &connForTest{}
 
@@ -34,13 +34,13 @@ func TestChannelNameBuilder(t *testing.T) {
 		SendData:      func(d *DataMessagePayload) {},
 	}
 
-	initSubscription := func(query string) {
+	procSubscription := func(query string) {
 		document, _ := parser.Parse(parser.ParseParams{
 			Source: query,
 		})
 		sub.Query = query
 		sub.Document = document
-		sub.Fields = []FieldWithArgs{}
+		sub.Fields = subscriptionFieldNamesFromDocument(sub.Document, sub.Variables, fn)
 	}
 
 	t.Run("query without args", func(t *testing.T) {
@@ -53,18 +53,17 @@ func TestChannelNameBuilder(t *testing.T) {
 			}
 		`
 
-		initSubscription(query)
-		fields := b.GetFieldsAndArgs(sub.Document, sub.Variables)
+		procSubscription(query)
 
-		if len(fields) != 1 {
+		if len(sub.Fields) != 1 {
 			t.Error("filled fields count should be 1")
 		}
-		if fields[0].Field() != "hello" {
-			t.Error("filled field must be 'hello', actually: ", fields[0].Field())
+		if sub.Fields[0].Field() != "hello" {
+			t.Error("filled field must be 'hello', actually: ", sub.Fields[0].Field())
 		}
 
-		if fields[0].String() != "hello" {
-			t.Error("filled channel must be 'hello', actually: ", fields[0].String())
+		if sub.Fields[0].String() != "hello" {
+			t.Error("filled channel must be 'hello', actually: ", sub.Fields[0].String())
 		}
 
 	})
@@ -79,18 +78,17 @@ func TestChannelNameBuilder(t *testing.T) {
 			}
 		`
 
-		initSubscription(query)
-		fields := b.GetFieldsAndArgs(sub.Document, sub.Variables)
+		procSubscription(query)
 
-		if len(fields) != 1 {
+		if len(sub.Fields) != 1 {
 			t.Error("filled fields count should be 1")
 		}
-		if fields[0].Field() != "hello" {
-			t.Error("filled field must be 'hello', actually: ", fields[0].Field())
+		if sub.Fields[0].Field() != "hello" {
+			t.Error("filled field must be 'hello', actually: ", sub.Fields[0].Field())
 		}
 
-		if fields[0].String() != "hello:fuu:1:3.14.false" {
-			t.Error("filled channel must be 'hello:fuu:1:3.14:false', actually: ", fields[0].String())
+		if sub.Fields[0].String() != "hello:fuu:1:3.14.false" {
+			t.Error("filled channel must be 'hello:fuu:1:3.14:false', actually: ", sub.Fields[0].String())
 		}
 
 	})
@@ -105,7 +103,7 @@ func TestChannelNameBuilder(t *testing.T) {
 			}
 		`
 
-		initSubscription(query)
+		procSubscription(query)
 		sub.Variables = map[string]interface{}{
 			"id":  2,
 			"aaa": "bbb",
@@ -113,18 +111,17 @@ func TestChannelNameBuilder(t *testing.T) {
 			"p2":  3.14,
 			"p3":  false,
 		}
+		sub.Fields = subscriptionFieldNamesFromDocument(sub.Document, sub.Variables, fn)
 
-		fields := b.GetFieldsAndArgs(sub.Document, sub.Variables)
-
-		if len(fields) != 1 {
+		if len(sub.Fields) != 1 {
 			t.Error("filled fields count should be 1")
 		}
-		if fields[0].Field() != "hello" {
-			t.Error("filled field must be 'hello', actually: ", fields[0].Field())
+		if sub.Fields[0].Field() != "hello" {
+			t.Error("filled field must be 'hello', actually: ", sub.Fields[0].Field())
 		}
 
-		if fields[0].String() != "hello:bbb:2:10:3.14:false" {
-			t.Error("filled channel must be 'hello:bbb:2:10:3.14:false', actually: ", fields[0].String())
+		if sub.Fields[0].String() != "hello:bbb:2:10:3.14:false" {
+			t.Error("filled channel must be 'hello:bbb:2:10:3.14:false', actually: ", sub.Fields[0].String())
 		}
 
 	})
@@ -139,13 +136,12 @@ func TestChannelNameBuilder(t *testing.T) {
 			}
 		`
 
-		initSubscription(query)
+		procSubscription(query)
 		sub.Variables = map[string]interface{}{}
+		sub.Fields = subscriptionFieldNamesFromDocument(sub.Document, sub.Variables, fn)
 
-		fields := b.GetFieldsAndArgs(sub.Document, sub.Variables)
-
-		if len(fields) != 0 {
-			t.Error("filled fields count should be 0, actually: ", fields[0])
+		if len(sub.Fields) != 0 {
+			t.Error("filled fields count should be 0, actually: ", sub.Fields[0].String())
 		}
 	})
 
