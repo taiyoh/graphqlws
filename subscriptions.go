@@ -36,7 +36,7 @@ type Subscription struct {
 	Variables     map[string]interface{}
 	OperationName string
 	Document      *ast.Document
-	Fields        []string
+	Fields        []FieldWithArgsSerializer
 	Connection    Connection
 	SendData      SubscriptionSendDataFunc
 }
@@ -50,8 +50,8 @@ func (s *Subscription) MatchesField(field string) bool {
 
 	// The subscription matches the field if any of the queries have
 	// the same name as the field
-	for _, name := range s.Fields {
-		if name == field {
+	for _, f := range s.Fields {
+		if f.Field() == field {
 			return true
 		}
 	}
@@ -88,9 +88,10 @@ type SubscriptionManager interface {
  */
 
 type subscriptionManager struct {
-	subscriptions Subscriptions
-	schema        *graphql.Schema
-	logger        *log.Entry
+	subscriptions        Subscriptions
+	schema               *graphql.Schema
+	fieldWithArgsFactory FieldWithArgsFactory
+	logger               *log.Entry
 }
 
 // NewSubscriptionManager creates a new subscription manager.
@@ -99,7 +100,12 @@ func NewSubscriptionManager(schema *graphql.Schema) SubscriptionManager {
 	manager.subscriptions = make(Subscriptions)
 	manager.logger = NewLogger("subscriptions")
 	manager.schema = schema
+	manager.fieldWithArgsFactory = getNewFieldWithArgsSerializerFunc()
 	return manager
+}
+
+func (m *subscriptionManager) ReplaceFieldWithArgsFunc(f FieldWithArgsFactory) {
+	m.fieldWithArgsFactory = f
 }
 
 func (m *subscriptionManager) Subscriptions() Subscriptions {
@@ -142,7 +148,7 @@ func (m *subscriptionManager) AddSubscription(
 	subscription.Document = document
 
 	// Extract query names from the document (typically, there should only be one)
-	subscription.Fields = subscriptionFieldNamesFromDocument(document)
+	subscription.Fields = subscriptionFieldNamesFromDocument(subscription.Document, subscription.Variables, m.fieldWithArgsFactory)
 
 	// Allocate the connection's map of subscription IDs to
 	// subscriptions on demand
