@@ -46,6 +46,14 @@ func (fa *fieldWithArgs) String() string {
 
 type NewFieldWithArgsFunc func(f string, a map[string]string) FieldWithArgs
 
+func (fn NewFieldWithArgsFunc) Generate(f string, a map[string]string) FieldWithArgs {
+	return fn(f, a)
+}
+
+type FieldWithArgsFactory interface {
+	Generate(f string, a map[string]string) FieldWithArgs
+}
+
 func GetNewFieldWithArgsFunc() NewFieldWithArgsFunc {
 	return func(f string, a map[string]string) FieldWithArgs {
 		fa := &fieldWithArgs{
@@ -143,13 +151,13 @@ func getFieldWithArgs(variables map[string]interface{}, set *ast.SelectionSet) (
 	return "", nil
 }
 
-func subscriptionFieldNamesFromDocument(doc *ast.Document, variables map[string]interface{}, fn NewFieldWithArgsFunc) []FieldWithArgs {
+func subscriptionFieldNamesFromDocument(doc *ast.Document, variables map[string]interface{}, fn FieldWithArgsFactory) []FieldWithArgs {
 	defs := operationDefinitionsWithOperation(doc, "subscription")
 	sets := selectionSetsForOperationDefinitions(defs)
 	fieldList := []FieldWithArgs{}
 	for _, set := range sets {
 		if f, args := getFieldWithArgs(variables, set); f != "" {
-			fieldList = append(fieldList, fn(f, args))
+			fieldList = append(fieldList, fn.Generate(f, args))
 		}
 	}
 	return fieldList
